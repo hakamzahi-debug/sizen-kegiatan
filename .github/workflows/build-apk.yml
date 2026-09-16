@@ -25,9 +25,12 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Accept Android SDK Licenses
+      - name: Setup Android SDK Platform & Accept Licenses
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          SDKMANAGER=$(which sdkmanager || echo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager")
+          yes | $SDKMANAGER --licenses || true
+          $SDKMANAGER "platforms;android-35" "build-tools;35.0.0" || true
+          yes | $SDKMANAGER --licenses || true
 
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
@@ -54,5 +57,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: JadwalKu-Android-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 14
