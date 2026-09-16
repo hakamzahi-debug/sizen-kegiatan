@@ -36,7 +36,8 @@ export function isItemActiveNow(item: ScheduleItem, currentDay: DayName, current
 
   const currentTotal = currentHours * 60 + currentMinutes;
   const startTotal = item.startHour * 60 + (item.startMinute || 0);
-  const endTotal = item.endHour === 24 ? 24 * 60 : item.endHour * 60 + (item.endMinute || 0);
+  const isEndOfDay = item.endHour >= 24 || (item.endHour === 23 && (item.endMinute || 0) >= 59);
+  const endTotal = isEndOfDay ? 24 * 60 : item.endHour * 60 + (item.endMinute || 0);
 
   return currentTotal >= startTotal && currentTotal < endTotal;
 }

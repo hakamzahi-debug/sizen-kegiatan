@@ -218,25 +218,56 @@ export function subscribeToUserSchedules(
   );
 }
 
+function formatSchedulePayload(userId: string, item: ScheduleItem): Record<string, any> {
+  let startHour = item.startHour !== undefined ? Math.round(Number(item.startHour)) : undefined;
+  let startMinute = item.startMinute !== undefined ? Math.round(Number(item.startMinute)) : undefined;
+  let endHour = item.endHour !== undefined ? Math.round(Number(item.endHour)) : undefined;
+  let endMinute = item.endMinute !== undefined ? Math.round(Number(item.endMinute)) : undefined;
+
+  // Clamp startHour to 0-23
+  if (startHour !== undefined) {
+    startHour = Math.max(0, Math.min(23, startHour));
+  }
+  // Clamp startMinute to 0-59
+  if (startMinute !== undefined) {
+    startMinute = Math.max(0, Math.min(59, startMinute));
+  }
+  // Clamp endHour: if 24 or greater, normalize to 23:59 (standard 24-hr clock boundary)
+  if (endHour !== undefined) {
+    if (endHour >= 24) {
+      endHour = 23;
+      endMinute = 59;
+    } else {
+      endHour = Math.max(0, Math.min(23, endHour));
+    }
+  }
+  if (endMinute !== undefined) {
+    endMinute = Math.max(0, Math.min(59, endMinute));
+  }
+
+  const payload: Record<string, any> = {
+    id: item.id,
+    userId,
+    hari: item.hari,
+    jam: item.jam,
+    kegiatan: item.kegiatan,
+    kategori: item.kategori,
+    updatedAt: new Date().toISOString()
+  };
+
+  if (startHour !== undefined) payload.startHour = startHour;
+  if (startMinute !== undefined) payload.startMinute = startMinute;
+  if (endHour !== undefined) payload.endHour = endHour;
+  if (endMinute !== undefined) payload.endMinute = endMinute;
+  if (item.keterangan !== undefined && item.keterangan !== null) payload.keterangan = String(item.keterangan);
+
+  return payload;
+}
+
 export async function saveScheduleToFirestore(userId: string, item: ScheduleItem): Promise<void> {
   const docPath = `users/${userId}/schedules/${item.id}`;
   try {
-    const payload: Record<string, any> = {
-      id: item.id,
-      userId,
-      hari: item.hari,
-      jam: item.jam,
-      kegiatan: item.kegiatan,
-      kategori: item.kategori,
-      updatedAt: new Date().toISOString()
-    };
-
-    if (item.startHour !== undefined) payload.startHour = Math.round(Number(item.startHour));
-    if (item.startMinute !== undefined) payload.startMinute = Math.round(Number(item.startMinute));
-    if (item.endHour !== undefined) payload.endHour = Math.round(Number(item.endHour));
-    if (item.endMinute !== undefined) payload.endMinute = Math.round(Number(item.endMinute));
-    if (item.keterangan !== undefined) payload.keterangan = item.keterangan;
-
+    const payload = formatSchedulePayload(userId, item);
     await setDoc(doc(db, 'users', userId, 'schedules', item.id), payload, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, docPath);
@@ -256,22 +287,7 @@ export async function seedInitialSchedulesToFirestore(userId: string, items: Sch
   try {
     const batch = writeBatch(db);
     for (const item of items) {
-      const payload: Record<string, any> = {
-        id: item.id,
-        userId,
-        hari: item.hari,
-        jam: item.jam,
-        kegiatan: item.kegiatan,
-        kategori: item.kategori,
-        updatedAt: new Date().toISOString()
-      };
-
-      if (item.startHour !== undefined) payload.startHour = Math.round(Number(item.startHour));
-      if (item.startMinute !== undefined) payload.startMinute = Math.round(Number(item.startMinute));
-      if (item.endHour !== undefined) payload.endHour = Math.round(Number(item.endHour));
-      if (item.endMinute !== undefined) payload.endMinute = Math.round(Number(item.endMinute));
-      if (item.keterangan !== undefined) payload.keterangan = item.keterangan;
-
+      const payload = formatSchedulePayload(userId, item);
       const docRef = doc(db, 'users', userId, 'schedules', item.id);
       batch.set(docRef, payload, { merge: true });
     }

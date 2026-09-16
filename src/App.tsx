@@ -28,13 +28,24 @@ import { User, onAuthStateChanged } from 'firebase/auth';
 
 const STORAGE_KEY = 'jadwal_mingguan_custom_v1';
 
+function sanitizeScheduleItem(item: ScheduleItem): ScheduleItem {
+  if (item.endHour !== undefined && item.endHour >= 24) {
+    return {
+      ...item,
+      endHour: 23,
+      endMinute: 59,
+    };
+  }
+  return item;
+}
+
 function mergeWithInitialSchedule(existingItems: ScheduleItem[]): ScheduleItem[] {
   const map = new Map<string, ScheduleItem>();
   for (const item of INITIAL_SCHEDULE) {
-    map.set(item.id, item);
+    map.set(item.id, sanitizeScheduleItem(item));
   }
   for (const item of existingItems) {
-    map.set(item.id, item);
+    map.set(item.id, sanitizeScheduleItem(item));
   }
   return Array.from(map.values()).sort((a, b) => {
     const aDay = DAYS_ORDER.indexOf(a.hari);
@@ -57,10 +68,11 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          if (parsed.length < 20) {
-            return mergeWithInitialSchedule(parsed);
+          const sanitized = parsed.map(sanitizeScheduleItem);
+          if (sanitized.length < 20) {
+            return mergeWithInitialSchedule(sanitized);
           }
-          return parsed;
+          return sanitized;
         }
       }
     } catch (e) {
@@ -96,7 +108,7 @@ export default function App() {
       (cloudItems) => {
         setIsSyncing(false);
         if (cloudItems && cloudItems.length > 0) {
-          let resolved = cloudItems;
+          let resolved = cloudItems.map(sanitizeScheduleItem);
           // If cloud has partial items (e.g. from previous broken seed with only 5 items),
           // merge with INITIAL_SCHEDULE to ensure all days are visible and re-seed to cloud
           if (cloudItems.length < 20) {
@@ -119,7 +131,7 @@ export default function App() {
         } else if (!hasSeededRef.current) {
           // If first time logging in and cloud collection is empty, seed complete schedule to Firestore
           hasSeededRef.current = true;
-          const itemsToSeed = items.length >= 20 ? items : INITIAL_SCHEDULE;
+          const itemsToSeed = (items.length >= 20 ? items : INITIAL_SCHEDULE).map(sanitizeScheduleItem);
           seedInitialSchedulesToFirestore(user.uid, itemsToSeed).catch((err) => {
             console.error('Failed to seed initial schedules to Firestore:', err);
           });
