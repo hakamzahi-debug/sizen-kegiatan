@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.jadwalku.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>JadwalKu</name>
+    <description>Aplikasi Jadwal Kegiatan Mingguan dan Pengingat</description>
+    <author email="hakamzahi99@gmail.com">JadwalKu Team</author>
+    
+    <content src="index.html" />
+    
+    <!-- Izin Akses Jaringan Penuh ke Firebase & Google API -->
+    <access origin="*" />
+    <allow-navigation href="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <allow-intent href="tel:*" />
+    <allow-intent href="sms:*" />
+    <allow-intent href="mailto:*" />
+    <allow-intent href="geo:*" />
+
+    <!-- Konfigurasi Modern Android WebView HTTPS -->
+    <preference name="scheme" value="https" />
+    <preference name="hostname" value="localhost" />
+    <preference name="MixedContentMode" value="0" />
+    <preference name="AndroidInsecureFileModeEnabled" value="true" />
+    <preference name="AllowUntrustedCerts" value="true" />
+
+    <!-- Plugin Pendukung Login & Jaringan -->
+    <plugin name="cordova-plugin-inappbrowser" />
+</widget>
