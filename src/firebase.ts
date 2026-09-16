@@ -159,7 +159,7 @@ export async function syncUserProfile(user: User): Promise<void> {
       createdAt: new Date().toISOString()
     }, { merge: true });
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, userDocPath);
+    console.warn("Peringatan: Gagal menyinkronkan profil ke Firestore (periksa Firestore Rules):", err);
   }
 }
 
@@ -223,8 +223,7 @@ export async function loginWithEmail(email: string, password: string): Promise<U
     const result = await signInWithEmailAndPassword(auth, email.trim(), password);
     const user = result.user;
     
-    // Ensure profile document exists
-    const userDocPath = `users/${user.uid}`;
+    // Ensure profile document exists without blocking login
     try {
       await setDoc(doc(db, 'users', user.uid), {
         userId: user.uid,
@@ -233,7 +232,7 @@ export async function loginWithEmail(email: string, password: string): Promise<U
         createdAt: new Date().toISOString()
       }, { merge: true });
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, userDocPath);
+      console.warn("Peringatan: Gagal update profil pengguna ke Firestore:", err);
     }
 
     return user;
@@ -255,7 +254,7 @@ export async function registerWithEmail(email: string, password: string, display
       console.warn("Gagal memperbarui display name:", e);
     }
 
-    const userDocPath = `users/${user.uid}`;
+    // Ensure profile document exists without blocking registration
     try {
       await setDoc(doc(db, 'users', user.uid), {
         userId: user.uid,
@@ -264,7 +263,7 @@ export async function registerWithEmail(email: string, password: string, display
         createdAt: new Date().toISOString()
       }, { merge: true });
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, userDocPath);
+      console.warn("Peringatan: Gagal menyimpan profil pengguna ke Firestore (cek Rules Firestore):", err);
     }
 
     return user;

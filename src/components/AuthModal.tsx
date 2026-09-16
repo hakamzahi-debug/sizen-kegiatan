@@ -102,16 +102,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
       if (code === 'auth/operation-not-allowed' || msg.includes('operation-not-allowed')) {
         setErrorMsg('Metode Email/Password belum diaktifkan di konsol Firebase proyek Anda. Buka console.firebase.google.com > Build > Authentication > Sign-in method > aktifkan Email/Password.');
+      } else if (code === 'auth/email-already-in-use' || msg.includes('email-already-in-use')) {
+        setErrorMsg('Email ini sudah berhasil terdaftar di Firebase! Silakan klik menu "Masuk" di sebelah kiri dan masukkan kata sandi Anda.');
       } else if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || msg.includes('invalid-credential')) {
         setErrorMsg('Email atau kata sandi tidak cocok. Jika belum punya akun, klik "Daftar Akun Baru" di bawah.');
       } else if (code === 'auth/wrong-password') {
         setErrorMsg('Kata sandi salah. Silakan periksa kembali atau gunakan Lupa Sandi.');
-      } else if (code === 'auth/email-already-in-use') {
-        setErrorMsg('Email ini sudah terdaftar. Silakan pilih "Masuk" dan masukkan kata sandi Anda.');
       } else if (code === 'auth/weak-password') {
         setErrorMsg('Kata sandi terlalu lemah. Gunakan minimal 6 karakter.');
       } else if (code === 'auth/invalid-email') {
         setErrorMsg('Format email tidak valid.');
+      } else if (msg.includes('missing or insufficient permissions') || msg.includes('permission-denied')) {
+        setErrorMsg('Akun Firebase Anda aktif! Namun aturan Firestore belum di-publish di konsol Firebase (console.firebase.google.com > Firestore Database > Rules).');
       } else {
         setErrorMsg(err?.message || 'Terjadi kesalahan saat otentikasi.');
       }
