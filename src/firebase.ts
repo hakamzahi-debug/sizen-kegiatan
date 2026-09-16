@@ -16,6 +16,8 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -131,32 +133,50 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 }
 
 // Authentication Helpers
-export async function loginWithGoogle(): Promise<{ user: User; accessToken: string | null }> {
+export async function syncUserProfile(user: User): Promise<void> {
+  const userDocPath = `users/${user.uid}`;
+  try {
+    await setDoc(doc(db, 'users', user.uid), {
+      userId: user.uid,
+      displayName: user.displayName || 'Pengguna',
+      email: user.email || '',
+      photoURL: user.photoURL || '',
+      createdAt: new Date().toISOString()
+    }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, userDocPath);
+  }
+}
+
+export async function loginWithGoogle(): Promise<{ user: User | null; accessToken: string | null }> {
   try {
     isSigningIn = true;
-    const result = await signInWithPopup(auth, googleProvider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    const token = credential?.accessToken || null;
-    if (token) {
-      cachedAccessToken = token;
-    }
-    const user = result.user;
-    
-    // Save/update user profile in Firestore
-    const userDocPath = `users/${user.uid}`;
     try {
-      await setDoc(doc(db, 'users', user.uid), {
-        userId: user.uid,
-        displayName: user.displayName || 'Pengguna',
-        email: user.email || '',
-        photoURL: user.photoURL || '',
-        createdAt: new Date().toISOString()
-      }, { merge: true });
-    } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, userDocPath);
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken || null;
+      if (token) {
+        cachedAccessToken = token;
+      }
+      const user = result.user;
+      await syncUserProfile(user);
+      return { user, accessToken: cachedAccessToken };
+    } catch (popupErr: any) {
+      const code = popupErr?.code || '';
+      const msg = String(popupErr?.message || '').toLowerCase();
+      // If popup was blocked or unsupported in current environment, fallback to redirect
+      if (
+        code === 'auth/popup-blocked' ||
+        code === 'auth/operation-not-supported-in-this-environment' ||
+        msg.includes('popup') ||
+        msg.includes('unsupported')
+      ) {
+        console.warn("Popup blocked or not supported, switching to signInWithRedirect...");
+        await signInWithRedirect(auth, googleProvider);
+        return { user: null, accessToken: null };
+      }
+      throw popupErr;
     }
-    
-    return { user, accessToken: cachedAccessToken };
   } catch (error) {
     console.error("Gagal login dengan Google:", error);
     throw error;
@@ -164,6 +184,24 @@ export async function loginWithGoogle(): Promise<{ user: User; accessToken: stri
     isSigningIn = false;
   }
 }
+
+export async function checkAuthRedirectResult(): Promise<User | null> {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result) {
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        cachedAccessToken = credential.accessToken;
+      }
+      await syncUserProfile(result.user);
+      return result.user;
+    }
+  } catch (err) {
+    console.error("Gagal memproses hasil redirect Google Auth:", err);
+  }
+  return null;
+}
+
 
 export async function loginWithEmail(email: string, password: string): Promise<User> {
   try {

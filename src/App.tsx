@@ -12,7 +12,7 @@ import { GoogleCalendarModal } from './components/GoogleCalendarModal';
 import { AuthModal } from './components/AuthModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { useScheduleAlarm } from './hooks/useScheduleAlarm';
-import { ScheduleItem, DayName, ActivityCategory } from './types';
+import { ScheduleItem, DayName, ActivityCategory, AppUser } from './types';
 import { INITIAL_SCHEDULE, DAYS_ORDER } from './data/scheduleData';
 import { getWIBDate, isItemActiveNow } from './utils/timeUtils';
 import { Sparkles } from 'lucide-react';
@@ -23,9 +23,11 @@ import {
   subscribeToUserSchedules, 
   saveScheduleToFirestore, 
   deleteScheduleFromFirestore, 
-  seedInitialSchedulesToFirestore 
+  seedInitialSchedulesToFirestore,
+  checkAuthRedirectResult
 } from './firebase';
 import { User, onAuthStateChanged } from 'firebase/auth';
+import { getStoredLocalUser, removeLocalUser } from './services/localAuthService';
 
 const STORAGE_KEY = 'jadwal_mingguan_custom_v1';
 
@@ -59,7 +61,7 @@ function mergeWithInitialSchedule(existingItems: ScheduleItem[]): ScheduleItem[]
 }
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | User | null>(() => getStoredLocalUser());
   const [isSyncing, setIsSyncing] = useState(false);
   const hasSeededRef = useRef(false);
 
@@ -92,17 +94,37 @@ export default function App() {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Monitor Firebase Auth status
+  // Monitor Google Redirect & Firebase Auth status & Local in-app user
   useEffect(() => {
+    // Check if user just returned from Google Redirect login
+    checkAuthRedirectResult().catch((err) => console.error('Redirect result check:', err));
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        // Fallback to local in-app account if available
+        const local = getStoredLocalUser();
+        setUser(local);
+      }
     });
-    return () => unsubscribe();
+
+    const handleLocalUserChanged = (e: any) => {
+      if (!auth.currentUser) {
+        setUser(e.detail || null);
+      }
+    };
+    window.addEventListener('jadwalku_local_user_changed', handleLocalUserChanged);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('jadwalku_local_user_changed', handleLocalUserChanged);
+    };
   }, []);
 
-  // Sync with Firestore when user is logged in
+  // Sync with Firestore ONLY when user is logged in via Firebase (not local in-app profile)
   useEffect(() => {
-    if (!user) return;
+    if (!user || (user as any).isLocal) return;
 
     setIsSyncing(true);
     const unsubscribe = subscribeToUserSchedules(
@@ -256,8 +278,8 @@ export default function App() {
       });
     });
 
-    // Save to Firebase if user is logged in
-    if (user) {
+    // Save to Firebase if user is logged in to Cloud
+    if (user && !(user as any).isLocal) {
       try {
         await saveScheduleToFirestore(user.uid, savedItem);
       } catch (err) {
@@ -269,8 +291,8 @@ export default function App() {
   const handleDeleteItem = async (id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
 
-    // Delete from Firebase if user is logged in
-    if (user) {
+    // Delete from Firebase if user is logged in to Cloud
+    if (user && !(user as any).isLocal) {
       try {
         await deleteScheduleFromFirestore(user.uid, id);
       } catch (err) {
@@ -290,7 +312,7 @@ export default function App() {
       setItems(INITIAL_SCHEDULE);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_SCHEDULE));
       handleResetFilters();
-      if (user) {
+      if (user && !(user as any).isLocal) {
         setIsSyncing(true);
         seedInitialSchedulesToFirestore(user.uid, INITIAL_SCHEDULE)
           .then(() => setIsSyncing(false))
@@ -311,9 +333,11 @@ export default function App() {
     }
   };
 
-  const handleGoogleLogout = async () => {
+  const handleLogout = async () => {
     try {
+      removeLocalUser();
       await logoutUser();
+      setUser(null);
     } catch (err) {
       console.error('Logout failed:', err);
     }
@@ -340,7 +364,7 @@ export default function App() {
         notificationPermission={notificationPermission}
         user={user}
         onLogin={() => setIsAuthModalOpen(true)}
-        onLogout={handleGoogleLogout}
+        onLogout={handleLogout}
         isSyncing={isSyncing}
       />
 

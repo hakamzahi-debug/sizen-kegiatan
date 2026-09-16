@@ -16,7 +16,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { User } from 'firebase/auth';
-import { ScheduleItem, DayName } from '../types';
+import { ScheduleItem, DayName, AppUser } from '../types';
 import { DAYS_ORDER } from '../data/scheduleData';
 import { 
   batchSyncToGoogleCalendar, 
@@ -30,7 +30,7 @@ interface GoogleCalendarModalProps {
   isOpen: boolean;
   onClose: () => void;
   items: ScheduleItem[];
-  user: User | null;
+  user: AppUser | User | null;
   onLogin: () => Promise<void>;
 }
 

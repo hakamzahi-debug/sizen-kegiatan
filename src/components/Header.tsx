@@ -17,11 +17,12 @@ import {
   LogIn,
   LogOut,
   User as UserIcon,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Smartphone
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { exportToExcel, exportToCSV, copyTableToClipboard } from '../utils/excelExport';
-import { ScheduleItem } from '../types';
+import { ScheduleItem, AppUser } from '../types';
 import { getWIBDate } from '../utils/timeUtils';
 import { PWAInstallButton } from './PWAInstallButton';
 import { NotificationStatus } from '../services/notificationService';
@@ -35,7 +36,7 @@ interface HeaderProps {
   onOpenGoogleCalendar: () => void;
   alarmEnabled: boolean;
   notificationPermission: NotificationStatus;
-  user: User | null;
+  user: AppUser | User | null;
   onLogin: () => void;
   onLogout: () => void;
   isSyncing: boolean;
@@ -135,13 +136,22 @@ export const Header: React.FC<HeaderProps> = ({
                   v2.2
                 </span>
 
-                {/* Cloud Sync Status Pill */}
+                {/* Sync Status Pill */}
                 {user && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200/70 shadow-2xs">
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full shadow-2xs ${
+                    (user as any).isLocal
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
+                      : 'bg-teal-50 text-teal-700 border border-teal-200/70'
+                  }`}>
                     {isSyncing ? (
                       <>
                         <Loader2 className="w-3 h-3 animate-spin text-teal-600" />
                         <span>Menyinkronkan...</span>
+                      </>
+                    ) : (user as any).isLocal ? (
+                      <>
+                        <Smartphone className="w-3 h-3 text-emerald-600" />
+                        <span>Akun HP (Tersimpan Aman)</span>
                       </>
                     ) : (
                       <>
@@ -271,9 +281,22 @@ export const Header: React.FC<HeaderProps> = ({
                       <p className="text-[11px] text-slate-400 truncate">
                         {user.email}
                       </p>
-                      <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-teal-700 font-semibold bg-teal-50 px-2 py-0.5 rounded-md">
-                        <Cloud className="w-3 h-3 text-teal-600" />
-                        <span>Tersimpan di Cloud Firebase</span>
+                      <div className={`mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                        (user as any).isLocal 
+                          ? 'text-emerald-700 bg-emerald-50' 
+                          : 'text-teal-700 bg-teal-50'
+                      }`}>
+                        {(user as any).isLocal ? (
+                          <>
+                            <Smartphone className="w-3 h-3 text-emerald-600" />
+                            <span>Tersimpan di HP (Jalur Langsung)</span>
+                          </>
+                        ) : (
+                          <>
+                            <Cloud className="w-3 h-3 text-teal-600" />
+                            <span>Tersimpan di Cloud Firebase</span>
+                          </>
+                        )}
                       </div>
                     </div>
 

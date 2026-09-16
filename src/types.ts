@@ -36,3 +36,12 @@ export interface AlarmSettings {
   volume: number;
   backgroundKeepAlive: boolean;
 }
+
+export interface AppUser {
+  uid: string;
+  displayName: string | null;
+  email: string | null;
+  photoURL?: string | null;
+  isLocal?: boolean;
+}
+
