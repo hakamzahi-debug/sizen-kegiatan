@@ -468,6 +468,8 @@ export default function App() {
             <span>Senin – Minggu</span>
             <span>•</span>
             <span>Zona Waktu: WIB (UTC+7)</span>
+            <span>•</span>
+            <span className="font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">Versi 2.2</span>
           </div>
         </div>
       </footer>
