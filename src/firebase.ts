@@ -179,14 +179,17 @@ export async function loginWithGoogle(): Promise<{ user: User | null; accessToke
     } catch (popupErr: any) {
       const code = popupErr?.code || '';
       const msg = String(popupErr?.message || '').toLowerCase();
-      // If popup was blocked or unsupported in current environment, fallback to redirect
+      // If popup was blocked, closed, or unsupported in mobile WebView, fallback to redirect
       if (
         code === 'auth/popup-blocked' ||
         code === 'auth/operation-not-supported-in-this-environment' ||
+        code === 'auth/cancelled-popup-request' ||
+        code === 'auth/internal-error' ||
+        code === 'auth/popup-closed-by-user' ||
         msg.includes('popup') ||
         msg.includes('unsupported')
       ) {
-        console.warn("Popup blocked or not supported, switching to signInWithRedirect...");
+        console.warn("Popup tidak didukung atau tertutup, beralih ke signInWithRedirect...");
         await signInWithRedirect(auth, googleProvider);
         return { user: null, accessToken: null };
       }
@@ -212,7 +215,7 @@ export async function checkAuthRedirectResult(): Promise<User | null> {
       return result.user;
     }
   } catch (err) {
-    console.error("Gagal memproses hasil redirect Google Auth:", err);
+    console.warn("Info hasil redirect Google Auth:", err);
   }
   return null;
 }
@@ -333,8 +336,8 @@ export function subscribeToUserSchedules(
       onUpdate(items);
     },
     (error) => {
+      console.warn("Peringatan Firestore onSnapshot (menggunakan data lokal):", error);
       if (onError) onError(error);
-      handleFirestoreError(error, OperationType.LIST, collectionPath);
     }
   );
 }
@@ -386,21 +389,19 @@ function formatSchedulePayload(userId: string, item: ScheduleItem): Record<strin
 }
 
 export async function saveScheduleToFirestore(userId: string, item: ScheduleItem): Promise<void> {
-  const docPath = `users/${userId}/schedules/${item.id}`;
   try {
     const payload = formatSchedulePayload(userId, item);
     await setDoc(doc(db, 'users', userId, 'schedules', item.id), payload, { merge: true });
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, docPath);
+    console.warn(`Peringatan: Gagal menyimpan jadwal ${item.id} ke cloud (tersimpan di lokal):`, error);
   }
 }
 
 export async function deleteScheduleFromFirestore(userId: string, itemId: string): Promise<void> {
-  const docPath = `users/${userId}/schedules/${itemId}`;
   try {
     await deleteDoc(doc(db, 'users', userId, 'schedules', itemId));
   } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, docPath);
+    console.warn(`Peringatan: Gagal menghapus jadwal ${itemId} dari cloud:`, error);
   }
 }
 
@@ -414,13 +415,6 @@ export async function seedInitialSchedulesToFirestore(userId: string, items: Sch
     }
     await batch.commit();
   } catch (error) {
-    console.error('Batch seed failed, falling back to sequential writes:', error);
-    for (const item of items) {
-      try {
-        await saveScheduleToFirestore(userId, item);
-      } catch (err) {
-        console.warn('Failed to seed item:', item.id, err);
-      }
-    }
+    console.warn('Batch seed Firestore gagal atau dibatasi izin (jadwal tetap aman di HP):', error);
   }
 }

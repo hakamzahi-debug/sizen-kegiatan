@@ -197,12 +197,12 @@ export default function App() {
     }
   }, [items]);
 
-  // Real-time WIB current activity check
+  // Real-time Phone clock current activity check
   const [wibTime, setWibTime] = useState(getWIBDate());
   useEffect(() => {
     const timer = setInterval(() => {
       setWibTime(getWIBDate());
-    }, 15000);
+    }, 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -384,7 +384,7 @@ export default function App() {
                     Sedang Berlangsung
                   </span>
                   <span className="text-xs text-emerald-100 font-medium">
-                    Hari {currentActiveItem.hari} • {wibTime.timeString} WIB
+                    Hari {currentActiveItem.hari} • Jam {wibTime.timeString}
                   </span>
                 </div>
                 <h2 className="text-base sm:text-xl font-black mt-1 text-white tracking-tight">

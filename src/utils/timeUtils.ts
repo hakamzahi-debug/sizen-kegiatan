@@ -1,12 +1,10 @@
 import { DayName, ScheduleItem } from '../types';
 
 export function getWIBDate(): { date: Date; dayName: DayName; timeString: string; hours: number; minutes: number } {
-  // WIB is UTC+7
+  // Menggunakan Jam Asli dari HP/Perangkat secara tepat dan real-time
   const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  const wibDate = new Date(utc + 3600000 * 7);
 
-  const dayIndex = wibDate.getDay(); // 0 is Sunday, 1 is Monday...
+  const dayIndex = now.getDay(); // 0 is Sunday, 1 is Monday...
   const dayMap: Record<number, DayName> = {
     0: 'Minggu',
     1: 'Senin',
@@ -17,12 +15,12 @@ export function getWIBDate(): { date: Date; dayName: DayName; timeString: string
     6: 'Sabtu',
   };
 
-  const hours = wibDate.getHours();
-  const minutes = wibDate.getMinutes();
-  const timeString = `${String(hours).padStart(2, '0')}.${String(minutes).padStart(2, '0')} WIB`;
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const timeString = `${String(hours).padStart(2, '0')}.${String(minutes).padStart(2, '0')}`;
 
   return {
-    date: wibDate,
+    date: now,
     dayName: dayMap[dayIndex],
     timeString,
     hours,

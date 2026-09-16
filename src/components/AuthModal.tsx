@@ -443,6 +443,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                   </>
                 )}
               </button>
+
+              <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl text-[11px] text-amber-900 space-y-2">
+                <p className="leading-relaxed">
+                  <strong>Pemberitahuan untuk Pengguna APK HP:</strong> Jika setelah memilih akun Google layar tertahan atau tidak lanjut (akibat sistem pembatasan popup WebView Android), silakan gunakan opsi masuk langsung di bawah ini:
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('email'); setAuthMode('login'); }}
+                    className="flex-1 py-1.5 px-2.5 bg-white border border-amber-300 text-amber-950 font-bold rounded-xl text-center hover:bg-amber-100 transition cursor-pointer shadow-2xs"
+                  >
+                    Masuk Email & Sandi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('direct')}
+                    className="flex-1 py-1.5 px-2.5 bg-emerald-600 text-white font-bold rounded-xl text-center hover:bg-emerald-700 transition cursor-pointer shadow-2xs"
+                  >
+                    Masuk Akun HP (Instan)
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

@@ -18,7 +18,8 @@ import {
   LogOut,
   User as UserIcon,
   Calendar as CalendarIcon,
-  Smartphone
+  Smartphone,
+  Sparkles
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { exportToExcel, exportToCSV, copyTableToClipboard } from '../utils/excelExport';
@@ -26,6 +27,7 @@ import { ScheduleItem, AppUser } from '../types';
 import { getWIBDate } from '../utils/timeUtils';
 import { PWAInstallButton } from './PWAInstallButton';
 import { NotificationStatus } from '../services/notificationService';
+import { UpdateModal } from './UpdateModal';
 
 interface HeaderProps {
   items: ScheduleItem[];
@@ -61,11 +63,12 @@ export const Header: React.FC<HeaderProps> = ({
   const [wibInfo, setWibInfo] = useState(getWIBDate());
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setWibInfo(getWIBDate());
-    }, 10000);
+    }, 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -132,9 +135,14 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                   Mingguan
                 </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 shadow-2xs">
-                  v2.3
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowUpdateModal(true)}
+                  title="Lihat info pembaruan v2.4 dan opsi update otomatis"
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 shadow-2xs cursor-pointer transition"
+                >
+                  v2.4
+                </button>
 
                 {/* Sync Status Pill */}
                 {user && (
@@ -168,10 +176,10 @@ export const Header: React.FC<HeaderProps> = ({
                   {items.length} Agenda
                 </span>
                 <span className="text-slate-300">•</span>
-                <div className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-emerald-800 bg-emerald-50/80 px-2 py-0.5 rounded-md border border-emerald-100">
+                <div className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-emerald-800 bg-emerald-50/80 px-2 py-0.5 rounded-md border border-emerald-100" title="Jam perangkat HP real-time">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                   <Clock className="w-3 h-3 text-emerald-600" />
-                  <span>{wibInfo.dayName}, {wibInfo.timeString} WIB</span>
+                  <span>{wibInfo.dayName}, {wibInfo.timeString}</span>
                 </div>
               </div>
             </div>
@@ -407,6 +415,18 @@ export const Header: React.FC<HeaderProps> = ({
                     <span>Google Calendar</span>
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      setShowUpdateModal(true);
+                    }}
+                    className="w-full text-left px-3.5 py-2 hover:bg-emerald-50 text-emerald-800 flex items-center gap-2 font-medium"
+                  >
+                    <Sparkles className="w-4 h-4 text-emerald-600" />
+                    <span>Pembaruan Aplikasi (v2.4)</span>
+                  </button>
+
                   {isModified && (
                     <>
                       <div className="h-px bg-slate-100 my-1" />
@@ -445,6 +465,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
       </div>
+
+      <UpdateModal isOpen={showUpdateModal} onClose={() => setShowUpdateModal(false)} />
     </header>
   );
 };
