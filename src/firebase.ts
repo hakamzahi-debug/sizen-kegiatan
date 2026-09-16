@@ -16,6 +16,10 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
   signOut as firebaseSignOut,
   User 
 } from 'firebase/auth';
@@ -158,6 +162,71 @@ export async function loginWithGoogle(): Promise<{ user: User; accessToken: stri
     throw error;
   } finally {
     isSigningIn = false;
+  }
+}
+
+export async function loginWithEmail(email: string, password: string): Promise<User> {
+  try {
+    const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+    const user = result.user;
+    
+    // Ensure profile document exists
+    const userDocPath = `users/${user.uid}`;
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        userId: user.uid,
+        displayName: user.displayName || email.split('@')[0] || 'Pengguna',
+        email: user.email || email.trim(),
+        createdAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, userDocPath);
+    }
+
+    return user;
+  } catch (error) {
+    console.error("Gagal login dengan email:", error);
+    throw error;
+  }
+}
+
+export async function registerWithEmail(email: string, password: string, displayName?: string): Promise<User> {
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+    const user = result.user;
+
+    const finalDisplayName = displayName?.trim() || email.split('@')[0] || 'Pengguna';
+    try {
+      await updateProfile(user, { displayName: finalDisplayName });
+    } catch (e) {
+      console.warn("Gagal memperbarui display name:", e);
+    }
+
+    const userDocPath = `users/${user.uid}`;
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        userId: user.uid,
+        displayName: finalDisplayName,
+        email: user.email || email.trim(),
+        createdAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, userDocPath);
+    }
+
+    return user;
+  } catch (error) {
+    console.error("Gagal mendaftar dengan email:", error);
+    throw error;
+  }
+}
+
+export async function sendPasswordReset(email: string): Promise<void> {
+  try {
+    await sendPasswordResetEmail(auth, email.trim());
+  } catch (error) {
+    console.error("Gagal mengirim email reset sandi:", error);
+    throw error;
   }
 }
 

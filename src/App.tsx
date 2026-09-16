@@ -9,6 +9,7 @@ import { EditModal } from './components/EditModal';
 import { AlarmModal } from './components/AlarmModal';
 import { AlarmSettingsModal } from './components/AlarmSettingsModal';
 import { GoogleCalendarModal } from './components/GoogleCalendarModal';
+import { AuthModal } from './components/AuthModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { useScheduleAlarm } from './hooks/useScheduleAlarm';
 import { ScheduleItem, DayName, ActivityCategory } from './types';
@@ -89,6 +90,7 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAlarmSettingsOpen, setIsAlarmSettingsOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Monitor Firebase Auth status
   useEffect(() => {
@@ -337,7 +339,7 @@ export default function App() {
         alarmEnabled={alarmSettings.enabled}
         notificationPermission={notificationPermission}
         user={user}
-        onLogin={handleGoogleLogin}
+        onLogin={() => setIsAuthModalOpen(true)}
         onLogout={handleGoogleLogout}
         isSyncing={isSyncing}
       />
@@ -511,6 +513,12 @@ export default function App() {
         items={items}
         user={user}
         onLogin={handleGoogleLogin}
+      />
+
+      {/* Cloud & Email/Password Authentication Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
       />
 
       {/* PWA Offline Indicator */}

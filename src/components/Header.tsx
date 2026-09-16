@@ -305,13 +305,13 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <button
                 type="button"
-                id="btn-login-google"
+                id="btn-login"
                 onClick={onLogin}
-                title="Masuk dengan Google untuk menyinkronkan jadwal ke Cloud Firestore"
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition shadow-xs"
+                title="Masuk atau Buat Akun untuk menyinkronkan jadwal ke Cloud Firestore"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition shadow-xs cursor-pointer"
               >
                 <LogIn className="w-4 h-4 text-emerald-600" />
-                <span>Masuk <span className="hidden sm:inline">Google</span></span>
+                <span>Masuk / Akun</span>
               </button>
             )}
 
