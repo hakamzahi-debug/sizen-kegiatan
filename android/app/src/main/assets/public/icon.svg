@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="128" fill="#059669"/>
+  <!-- Calendar Base -->
+  <rect x="96" y="128" width="320" height="280" rx="32" fill="#ffffff"/>
+  <path d="M96 160C96 142.327 110.327 128 128 128H384C401.673 128 416 142.327 416 160V208H96V160Z" fill="#047857"/>
+  <!-- Calendar Rings -->
+  <rect x="152" y="96" width="32" height="64" rx="16" fill="#10B981"/>
+  <rect x="328" y="96" width="32" height="64" rx="16" fill="#10B981"/>
+  <!-- Bell / Clock Alarm Symbol -->
+  <circle cx="256" cy="310" r="64" fill="#ECFDF5" stroke="#059669" stroke-width="16"/>
+  <polyline points="256,278 256,310 280,326" stroke="#059669" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Little notification badge -->
+  <circle cx="360" cy="240" r="28" fill="#F59E0B" stroke="#ffffff" stroke-width="8"/>
+</svg>

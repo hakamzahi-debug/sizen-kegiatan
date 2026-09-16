@@ -1,0 +1,6 @@
+{
+  "name": "Jadwal Kegiatan Mingguan",
+  "description": "Tabel jadwal kegiatan mingguan terstruktur dengan integrasi Google Calendar resmi, sinkronisasi Cloud Firestore, alarm HP, dan ekspor Excel (.xlsx).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

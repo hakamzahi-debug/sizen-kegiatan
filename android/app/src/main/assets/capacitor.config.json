@@ -1,0 +1,14 @@
+{
+	"appId": "com.jadwalku.app",
+	"appName": "JadwalKu",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"plugins": {
+		"LocalNotifications": {
+			"smallIcon": "ic_stat_alarm",
+			"iconColor": "#059669"
+		}
+	}
+}

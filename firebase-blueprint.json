@@ -1,0 +1,107 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile metadata",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Unique identifier of the user"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name"
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "User avatar URL"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["userId", "email"]
+    },
+    "Schedule": {
+      "title": "Schedule",
+      "description": "A scheduled weekly activity item",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Schedule item unique ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner user ID"
+        },
+        "hari": {
+          "type": "string",
+          "description": "Day of the week",
+          "enum": ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
+        },
+        "jam": {
+          "type": "string",
+          "description": "Time range string, e.g. 18.30 – 21.00",
+          "maxLength": 60
+        },
+        "startHour": {
+          "type": "number",
+          "description": "Start hour (0-23)"
+        },
+        "startMinute": {
+          "type": "number",
+          "description": "Start minute (0-59)"
+        },
+        "endHour": {
+          "type": "number",
+          "description": "End hour (0-23)"
+        },
+        "endMinute": {
+          "type": "number",
+          "description": "End minute (0-59)"
+        },
+        "kegiatan": {
+          "type": "string",
+          "description": "Activity name",
+          "maxLength": 200
+        },
+        "keterangan": {
+          "type": "string",
+          "description": "Notes or details",
+          "maxLength": 500
+        },
+        "kategori": {
+          "type": "string",
+          "description": "Activity category",
+          "enum": ["sekolah", "ibadah_rehat", "olahraga", "belajar", "bimbel", "animasi", "santai", "lainnya"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp"
+        }
+      },
+      "required": ["id", "userId", "hari", "jam", "kegiatan", "kategori"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/schedules/{scheduleId}": {
+      "schema": "Schedule",
+      "description": "User weekly schedule items"
+    }
+  }
+}

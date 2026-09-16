@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['userId', 'email']) &&
+        data.keys().hasOnly(['userId', 'displayName', 'email', 'photoURL', 'createdAt']) &&
+        data.userId == userId &&
+        data.userId == request.auth.uid &&
+        data.email is string && data.email.size() <= 100 &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 2048)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50));
+    }
+
+    function isValidDay(day) {
+      return day in ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    }
+
+    function isValidCategory(cat) {
+      return cat in ['sekolah', 'ibadah_rehat', 'olahraga', 'belajar', 'bimbel', 'animasi', 'santai', 'lainnya'];
+    }
+
+    function isValidSchedule(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'hari', 'jam', 'kegiatan', 'kategori']) &&
+        data.keys().hasOnly(['id', 'userId', 'hari', 'jam', 'startHour', 'startMinute', 'endHour', 'endMinute', 'kegiatan', 'keterangan', 'kategori', 'createdAt', 'updatedAt']) &&
+        data.userId == userId &&
+        data.userId == request.auth.uid &&
+        data.id is string && data.id.size() <= 128 &&
+        isValidDay(data.hari) &&
+        data.jam is string && data.jam.size() <= 60 &&
+        data.kegiatan is string && data.kegiatan.size() > 0 && data.kegiatan.size() <= 200 &&
+        isValidCategory(data.kategori) &&
+        (!('startHour' in data) || (data.startHour is number && data.startHour >= 0 && data.startHour <= 23)) &&
+        (!('startMinute' in data) || (data.startMinute is number && data.startMinute >= 0 && data.startMinute <= 59)) &&
+        (!('endHour' in data) || (data.endHour is number && data.endHour >= 0 && data.endHour <= 24)) &&
+        (!('endMinute' in data) || (data.endMinute is number && data.endMinute >= 0 && data.endMinute <= 59)) &&
+        (!('keterangan' in data) || (data.keterangan is string && data.keterangan.size() <= 500)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    // User profile matching
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId);
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId) &&
+        incoming().userId == existing().userId;
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // Subcollection: Schedules
+      match /schedules/{scheduleId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(scheduleId);
+        allow list: if isOwner(userId) && isValidId(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(scheduleId) &&
+          isValidSchedule(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(scheduleId) &&
+          isValidSchedule(incoming(), userId) &&
+          incoming().userId == existing().userId &&
+          incoming().id == existing().id;
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(scheduleId);
+      }
+    }
+  }
+}
