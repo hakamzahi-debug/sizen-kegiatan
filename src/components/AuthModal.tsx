@@ -138,7 +138,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
-      setErrorMsg(parseFirebaseError(err));
+      const msg = (err?.message || '').toLowerCase();
+      if (msg.includes('popup') || msg.includes('cancelled') || msg.includes('closed') || msg.includes('invalid')) {
+        setErrorMsg('Di aplikasi Android APK, silakan gunakan tab "Masuk" atau "Daftar Baru" menggunakan Email & Kata Sandi agar langsung tersimpan aman di Cloud Firestore tanpa membuka browser eksternal.');
+      } else {
+        setErrorMsg(parseFirebaseError(err));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -362,6 +367,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 </svg>
                 <span>Akun Google</span>
               </button>
+              <p className="text-[11px] text-slate-400 text-center mt-1.5 leading-tight">
+                💡 Di aplikasi HP (APK), disarankan masuk/daftar menggunakan <strong>Email & Sandi</strong> di atas agar langsung sinkron tanpa keluar aplikasi.
+              </p>
             </div>
           )}
 
