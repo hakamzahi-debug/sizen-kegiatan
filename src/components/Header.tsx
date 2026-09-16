@@ -133,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
                   Mingguan
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 shadow-2xs">
-                  v2.2
+                  v2.3
                 </span>
 
                 {/* Sync Status Pill */}

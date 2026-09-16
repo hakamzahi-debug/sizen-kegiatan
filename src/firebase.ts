@@ -25,7 +25,7 @@ import {
   signOut as firebaseSignOut,
   User 
 } from 'firebase/auth';
-import firebaseConfig from '../firebase-applet-config.json';
+import defaultFirebaseConfig from '../firebase-applet-config.json';
 import { ScheduleItem } from './types';
 
 // Workspace Scopes for Google Calendar
@@ -38,12 +38,27 @@ export const GOOGLE_CALENDAR_SCOPES = [
 let cachedAccessToken: string | null = null;
 let isSigningIn = false;
 
-// Inisialisasi Firebase App menggunakan config resmi dari cloud
-export const app = initializeApp(firebaseConfig);
+// Konfigurasi resmi proyek JadwalKu milik Anda (langsung disematkan agar permanen saat build ke GitHub/APK)
+const resolvedFirebaseConfig = {
+  apiKey: "AIzaSyBtqFYBsVmqmafeN_h0FN5fQvVoSwKwwWM",
+  authDomain: "jadwalku-d40c2.firebaseapp.com",
+  projectId: "jadwalku-d40c2",
+  storageBucket: "jadwalku-d40c2.firebasestorage.app",
+  messagingSenderId: "296421851413",
+  appId: "1:296421851413:web:24972c1b92a5c25f9ba91c",
+  measurementId: "G-CYYMQL2FQ0",
+  ...defaultFirebaseConfig
+};
 
-// CRITICAL: The app will break without databaseId
-const databaseId = (firebaseConfig as Record<string, any>).firestoreDatabaseId || 'ai-studio-dailyproductivit-8d0e0927-84d8-4afe-aa74-5ee3452a451c';
-export const db = getFirestore(app, databaseId);
+// Inisialisasi Firebase App menggunakan config resmi jadwalku-d40c2
+export const app = initializeApp(resolvedFirebaseConfig);
+
+// Firestore Database instance (menggunakan default database)
+const customDatabaseId = (resolvedFirebaseConfig as Record<string, any>).firestoreDatabaseId;
+export const db = (customDatabaseId && customDatabaseId.trim() !== '' && customDatabaseId !== '(default)')
+  ? getFirestore(app, customDatabaseId)
+  : getFirestore(app);
+
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 

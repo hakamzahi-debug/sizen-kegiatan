@@ -1,12 +1,12 @@
 {
-  "projectId": "shaped-dispatch-cvxch",
-  "appId": "1:71868067170:web:55b4764990b9f27b91903b",
-  "apiKey": "AIzaSyCXqcE11jPlQFuunSOj7IX9Ev3GWxip-HE",
-  "authDomain": "shaped-dispatch-cvxch.firebaseapp.com",
-  "storageBucket": "shaped-dispatch-cvxch.firebasestorage.app",
-  "messagingSenderId": "71868067170",
-  "measurementId": "",
-  "oAuthClientId": "71868067170-ckg3hd314f14g0c3bufnrtap9138cuqa.apps.googleusercontent.com",
-  "recaptchaSiteKey": "",
-  "firestoreDatabaseId": "ai-studio-dailyproductivit-8d0e0927-84d8-4afe-aa74-5ee3452a451c"
+  "projectId": "jadwalku-d40c2",
+  "appId": "1:296421851413:web:24972c1b92a5c25f9ba91c",
+  "apiKey": "AIzaSyBtqFYBsVmqmafeN_h0FN5fQvVoSwKwwWM",
+  "authDomain": "jadwalku-d40c2.firebaseapp.com",
+  "firestoreDatabaseId": "",
+  "storageBucket": "jadwalku-d40c2.firebasestorage.app",
+  "messagingSenderId": "296421851413",
+  "measurementId": "G-CYYMQL2FQ0",
+  "oAuthClientId": "",
+  "recaptchaSiteKey": ""
 }
