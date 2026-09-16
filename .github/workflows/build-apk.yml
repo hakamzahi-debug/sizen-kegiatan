@@ -29,7 +29,7 @@ jobs:
         run: |
           SDKMANAGER=$(which sdkmanager || echo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager")
           yes | $SDKMANAGER --licenses || true
-          $SDKMANAGER "platforms;android-35" "build-tools;35.0.0" || true
+          $SDKMANAGER "platforms;android-36" "build-tools;36.0.0" "platforms;android-35" "build-tools;35.0.0" || true
           yes | $SDKMANAGER --licenses || true
 
       - name: Install Dependencies
