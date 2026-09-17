@@ -1,8 +1,10 @@
 import { initializeApp } from 'firebase/app';
 import { 
   getFirestore, 
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   doc, 
-  getDocFromServer,
   collection,
   query,
   getDocs,
@@ -53,11 +55,21 @@ const resolvedFirebaseConfig = {
 // Inisialisasi Firebase App menggunakan config resmi jadwalku-d40c2
 export const app = initializeApp(resolvedFirebaseConfig);
 
-// Firestore Database instance (menggunakan default database)
+// Firestore Database instance dengan offline persistence
 const customDatabaseId = (resolvedFirebaseConfig as Record<string, any>).firestoreDatabaseId;
-export const db = (customDatabaseId && customDatabaseId.trim() !== '' && customDatabaseId !== '(default)')
-  ? getFirestore(app, customDatabaseId)
-  : getFirestore(app);
+export const db = (() => {
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    }, (customDatabaseId && customDatabaseId.trim() !== '' && customDatabaseId !== '(default)') ? customDatabaseId : undefined);
+  } catch {
+    return (customDatabaseId && customDatabaseId.trim() !== '' && customDatabaseId !== '(default)')
+      ? getFirestore(app, customDatabaseId)
+      : getFirestore(app);
+  }
+})();
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
@@ -85,18 +97,6 @@ export function getCalendarAccessToken(): string | null {
 export function setCalendarAccessToken(token: string | null) {
   cachedAccessToken = token;
 }
-
-// Connection testing as mandated by skill
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn("Firestore status: Client appears offline or connection pending.");
-    }
-  }
-}
-testConnection();
 
 // Error Handling Infrastructure
 export enum OperationType {
