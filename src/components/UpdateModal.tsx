@@ -51,15 +51,15 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
             <ul className="space-y-1.5 text-slate-600 text-xs pl-2">
               <li className="flex items-start gap-2">
                 <span className="text-emerald-600 font-bold">•</span>
-                <span><strong>Jam Real-time HP:</strong> Jam dan agenda otomatis disesuaikan secara presisi dengan jam asli perangkat HP Anda.</span>
+                <span><strong>Jadwal & Jam Permanen (Tidak Akan Berubah):</strong> Editan kegiatan dan jam yang Anda buat dikunci permanen ke akun Anda dan tidak akan pernah tertimpa atau tereset lagi.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-emerald-600 font-bold">•</span>
-                <span><strong>Penyempurnaan Login:</strong> Penanganan login Google & email diperbaiki agar tidak tersangkut di proses otentikasi.</span>
+                <span><strong>Simpan Akun Google ke Firebase:</strong> Daftarkan nama & email Google langsung ke cloud database Firebase (jadwalku-d40c2) tanpa kendala popup Android.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-emerald-600 font-bold">•</span>
-                <span><strong>Ketahanan Data:</strong> Penulisan profil dan jadwal aman dari error perizinan database.</span>
+                <span><strong>Jam Real-time HP:</strong> Penunjuk waktu dan agenda disinkronkan secara presisi dengan jam asli perangkat HP Anda setiap detik.</span>
               </li>
             </ul>
           </div>

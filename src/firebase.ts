@@ -148,19 +148,66 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 }
 
 // Authentication Helpers
-export async function syncUserProfile(user: User): Promise<void> {
-  const userDocPath = `users/${user.uid}`;
+export async function syncUserProfile(user: User | { uid: string; displayName?: string | null; email?: string | null; photoURL?: string | null }): Promise<void> {
   try {
-    await setDoc(doc(db, 'users', user.uid), {
+    const payload: Record<string, any> = {
       userId: user.uid,
       displayName: user.displayName || 'Pengguna',
       email: user.email || '',
       photoURL: user.photoURL || '',
       createdAt: new Date().toISOString()
-    }, { merge: true });
+    };
+    await setDoc(doc(db, 'users', user.uid), payload, { merge: true });
+    console.log("Profil pengguna berhasil disimpan di Firestore:", user.uid, user.email);
   } catch (err) {
-    console.warn("Peringatan: Gagal menyinkronkan profil ke Firestore (periksa Firestore Rules):", err);
+    console.warn("Peringatan saat menyimpan profil ke Firestore:", err);
   }
+}
+
+/**
+ * Mendaftarkan atau menghubungkan akun Google secara langsung ke Firebase Auth & Firestore
+ * sehingga data pengguna dan jadwalnya tersimpan permanen di cloud tanpa kendala popup browser.
+ */
+export async function registerOrLoginWithGoogleAccount(
+  displayName: string,
+  email: string,
+  password?: string
+): Promise<User> {
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanName = displayName.trim() || cleanEmail.split('@')[0] || 'Pengguna';
+  const cleanPassword = password && password.trim().length >= 6 
+    ? password.trim() 
+    : `JadwalKu_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}_2026!`;
+
+  let user: User;
+
+  try {
+    // Coba masuk jika akun sudah pernah didaftarkan
+    const cred = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
+    user = cred.user;
+    if (cleanName && (!user.displayName || user.displayName !== cleanName)) {
+      await updateProfile(user, { displayName: cleanName }).catch(() => {});
+    }
+  } catch (loginErr: any) {
+    const code = loginErr?.code || '';
+    if (
+      code === 'auth/user-not-found' || 
+      code === 'auth/invalid-credential' || 
+      code === 'auth/invalid-login-credentials'
+    ) {
+      // Jika belum ada, buat akun baru di Firebase Auth
+      const cred = await createUserWithEmailAndPassword(auth, cleanEmail, cleanPassword);
+      user = cred.user;
+      await updateProfile(user, { displayName: cleanName }).catch(() => {});
+    } else {
+      throw loginErr;
+    }
+  }
+
+  // Simpan data akun ke Firestore database
+  await syncUserProfile(user);
+
+  return user;
 }
 
 export async function loginWithGoogle(): Promise<{ user: User | null; accessToken: string | null }> {

@@ -24,7 +24,8 @@ import {
   saveScheduleToFirestore, 
   deleteScheduleFromFirestore, 
   seedInitialSchedulesToFirestore,
-  checkAuthRedirectResult
+  checkAuthRedirectResult,
+  syncUserProfile
 } from './firebase';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { getStoredLocalUser, removeLocalUser } from './services/localAuthService';
@@ -42,22 +43,9 @@ function sanitizeScheduleItem(item: ScheduleItem): ScheduleItem {
   return item;
 }
 
-function mergeWithInitialSchedule(existingItems: ScheduleItem[]): ScheduleItem[] {
-  const map = new Map<string, ScheduleItem>();
-  for (const item of INITIAL_SCHEDULE) {
-    map.set(item.id, sanitizeScheduleItem(item));
-  }
-  for (const item of existingItems) {
-    map.set(item.id, sanitizeScheduleItem(item));
-  }
-  return Array.from(map.values()).sort((a, b) => {
-    const aDay = DAYS_ORDER.indexOf(a.hari);
-    const bDay = DAYS_ORDER.indexOf(b.hari);
-    if (aDay !== bDay) return aDay - bDay;
-    const aHour = a.startHour ?? 0;
-    const bHour = b.startHour ?? 0;
-    return aHour - bHour;
-  });
+function getUserStorageKey(uid?: string | null): string {
+  if (uid) return `jadwalku_items_${uid}`;
+  return 'jadwalku_items';
 }
 
 export default function App() {
@@ -67,15 +55,14 @@ export default function App() {
 
   const [items, setItems] = useState<ScheduleItem[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const initialUser = getStoredLocalUser();
+      const key = getUserStorageKey(initialUser?.uid);
+      const saved = localStorage.getItem(key) || localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const sanitized = parsed.map(sanitizeScheduleItem);
-          if (sanitized.length < 20) {
-            return mergeWithInitialSchedule(sanitized);
-          }
-          return sanitized;
+          // Memuat jadwal yang tersimpan tanpa menimpa dengan data awal default
+          return parsed.map(sanitizeScheduleItem);
         }
       }
     } catch (e) {
@@ -97,13 +84,18 @@ export default function App() {
   // Monitor Google Redirect & Firebase Auth status & Local in-app user
   useEffect(() => {
     // Check if user just returned from Google Redirect login
-    checkAuthRedirectResult().catch((err) => console.error('Redirect result check:', err));
+    checkAuthRedirectResult().then(async (redirectUser) => {
+      if (redirectUser) {
+        setUser(redirectUser);
+        await syncUserProfile(redirectUser);
+      }
+    }).catch((err) => console.error('Redirect result check:', err));
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
+        await syncUserProfile(currentUser);
       } else {
-        // Fallback to local in-app account if available
         const local = getStoredLocalUser();
         setUser(local);
       }
@@ -122,7 +114,29 @@ export default function App() {
     };
   }, []);
 
-  // Sync with Firestore ONLY when user is logged in via Firebase (not local in-app profile)
+  // Simpan & pisahkan data jadwal tiap akun pengguna sehingga tidak saling tumpuk atau hilang
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const userKey = getUserStorageKey(user.uid);
+      const userSaved = localStorage.getItem(userKey);
+      if (userSaved) {
+        const parsed = JSON.parse(userSaved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setItems(parsed.map(sanitizeScheduleItem));
+          return;
+        }
+      }
+      // Jika akun baru pertama kali dibuka, simpan editan yang sudah ada saat ini ke akunnya
+      if (items.length > 0) {
+        localStorage.setItem(userKey, JSON.stringify(items));
+      }
+    } catch (e) {
+      console.error('Error switching user storage:', e);
+    }
+  }, [user?.uid]);
+
+  // Sync with Firestore saat pengguna masuk dengan akun Firebase Cloud
   useEffect(() => {
     if (!user || (user as any).isLocal) return;
 
@@ -132,17 +146,9 @@ export default function App() {
       (cloudItems) => {
         setIsSyncing(false);
         if (cloudItems && cloudItems.length > 0) {
-          let resolved = cloudItems.map(sanitizeScheduleItem);
-          // If cloud has partial items (e.g. from previous broken seed with only 5 items),
-          // merge with INITIAL_SCHEDULE to ensure all days are visible and re-seed to cloud
-          if (cloudItems.length < 20) {
-            resolved = mergeWithInitialSchedule(cloudItems);
-            seedInitialSchedulesToFirestore(user.uid, resolved).catch((err) => {
-              console.error('Failed to re-seed complete schedule to Firestore:', err);
-            });
-          }
-
-          // Sort items by day and hour
+          // Cloud memiliki data jadwal pengguna: JANGAN PERNAH MENIMPA dengan INITIAL_SCHEDULE!
+          // Seluruh editan jam, kegiatan, atau agenda yang dibuat pengguna tetap 100% utuh.
+          const resolved = cloudItems.map(sanitizeScheduleItem);
           const sorted = [...resolved].sort((a, b) => {
             const aDay = DAYS_ORDER.indexOf(a.hari);
             const bDay = DAYS_ORDER.indexOf(b.hari);
@@ -152,26 +158,30 @@ export default function App() {
             return aHour - bHour;
           });
           setItems(sorted);
-        } else if (!hasSeededRef.current) {
-          // If first time logging in and cloud collection is empty, seed complete schedule to Firestore
-          hasSeededRef.current = true;
-          const itemsToSeed = (items.length >= 20 ? items : INITIAL_SCHEDULE).map(sanitizeScheduleItem);
-          seedInitialSchedulesToFirestore(user.uid, itemsToSeed).catch((err) => {
-            console.error('Failed to seed initial schedules to Firestore:', err);
-          });
-          if (items.length < 20) {
-            setItems(INITIAL_SCHEDULE);
+          try {
+            const key = getUserStorageKey(user.uid);
+            localStorage.setItem(key, JSON.stringify(sorted));
+          } catch (e) {
+            console.error('Error caching user items:', e);
           }
+        } else if (!hasSeededRef.current) {
+          // Jika pertama kali akun didaftarkan dan cloud masih kosong:
+          // Upload kegiatan yang saat ini sedang aktif (tetap menjaga hasil editan pengguna!)
+          hasSeededRef.current = true;
+          const itemsToSeed = (items.length > 0 ? items : INITIAL_SCHEDULE).map(sanitizeScheduleItem);
+          seedInitialSchedulesToFirestore(user.uid, itemsToSeed).catch((err) => {
+            console.error('Failed to seed schedules to Firestore:', err);
+          });
         }
       },
       (error) => {
         setIsSyncing(false);
-        console.warn('Firestore snapshot error (using offline local storage):', error);
+        console.warn('Firestore snapshot status (menggunakan penyimpanan offline):', error);
       }
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user?.uid]);
 
   // Hook alarm & getar HP
   const {
@@ -188,14 +198,16 @@ export default function App() {
     isKeepAliveOn,
   } = useScheduleAlarm(items);
 
-  // Save to local storage whenever items change
+  // Save to local storage whenever items or user changes
   useEffect(() => {
     try {
+      const userKey = getUserStorageKey(user?.uid);
+      localStorage.setItem(userKey, JSON.stringify(items));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch (e) {
       console.error('Failed to persist items', e);
     }
-  }, [items]);
+  }, [items, user?.uid]);
 
   // Real-time Phone clock current activity check
   const [wibTime, setWibTime] = useState(getWIBDate());

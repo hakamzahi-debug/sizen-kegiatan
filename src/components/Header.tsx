@@ -310,6 +310,19 @@ export const Header: React.FC<HeaderProps> = ({
 
                     <button
                       type="button"
+                      id="btn-switch-account"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        onLogin();
+                      }}
+                      className="w-full text-left px-3 py-2 hover:bg-slate-50 text-slate-700 rounded-xl flex items-center gap-2 font-semibold transition"
+                    >
+                      <UserIcon className="w-4 h-4 text-slate-500" />
+                      <span>Akun & Sinkronisasi Cloud</span>
+                    </button>
+
+                    <button
+                      type="button"
                       id="btn-user-calendar"
                       onClick={() => {
                         setShowUserMenu(false);
